@@ -1,68 +1,226 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## React Tic-Tac-Toe Game Tutorial + Challenges
 
-## Available Scripts
+An interactive tic-tac-toe game built with React
 
-In the project directory, you can run:
+## Installation and Setup Instructions
 
-### `npm start`
+Installation:
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+`npm install`
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+To Start Server:
 
-### `npm test`
+`npm start`
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+To Visit App:
 
-### `npm run build`
+`localhost:3000`
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Challenges
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+1. Display the location for each move in the format (col, row) in the move history list.
+    ```js
+    const selectedIndex = getSelectedIndex(step.squares, move ? history[move - 1].squares : null);
+    const col = selectedIndex > -1 ? (selectedIndex % 3) + 1 : null;
+    const row = selectedIndex > -1 ? Math.floor(selectedIndex / 3) + 1: null;
+    const location = col && row ?  `(${col}, ${row})` : null;
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+    const desc = move ? 
+        'Go to move #' + move + (location ? `: ${location}` : ''):
+        'Go to game start';
+    ```
 
-### `npm run eject`
+    ```js
+    function getSelectedIndex(squares, previousSquares) {
+        let selectedIndex = -1;
+        if (Array.isArray(squares)) {
+            let square, previousSquare;
+            const hasPrevious = Array.isArray(previousSquares) && squares.length === previousSquares.length;
+            for (let i = 0; i < squares.length; i++) {
+                square = squares[i];
+                previousSquare = hasPrevious ? previousSquares[i] : null;
+                
+                if ((hasPrevious && square !== previousSquare) || (!hasPrevious && square)) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+        }
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+        return selectedIndex;
+    }
+    ```
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+2. Bold the currently selected item in the move list.
+    ```js
+    return (
+        <li key={move} className={move===this.state.stepNumber ? 'active' : ''}>
+            <button onClick={()=> this.jumpTo(move)}>{desc}</button>
+        </li>
+    );
+    ```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+    ```css
+    ol > li.active > button {
+        font-weight: bold;
+    }
+    ```
 
-## Learn More
+3. Rewrite Board to use two loops to make the squares instead of hardcoding them.
+    ```js
+    render() {
+        const SIZE = 3;
+        const winner = calculateWinner(this.props.squares);
+        let rows = Array(SIZE).fill(null);
+        let cols = Array(SIZE).fill(null);
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+        const board = rows.map((value, rowIndex) => {
+            return (
+                <div className="board-row" key={rowIndex}>
+                    { 
+                        cols.map((value, colIndex) => {
+                            const position = SIZE*rowIndex + colIndex;
+                            const highlight = winner ? winner.line.includes(position) : null;
+                            return this.renderSquare(position, highlight)
+                        })
+                    }
+                </div>
+            );
+        });
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+        return (
+            <div>
+                {board}
+            </div>
+        );
+    }
+    ```
 
-### Code Splitting
+4. Add a toggle button that lets you sort the moves in either ascending or descending order.
+    ```js
+    constructor(props) {
+        super(props);
+        this.state = {
+            history: [{
+                squares: Array(9).fill(null)
+            }],
+            stepNumber: 0,
+            xIsNext: true,
+            reverse: false
+        };
+    }
+    ```
+    ```js
+    reverse() {
+        this.setState({
+            reverse: !this.state.reverse
+        });
+    }
+    ```
+    ```js
+    return (
+        //...
+        <div className="game-info">
+            <div>{status}</div>
+            <div>
+                <button onClick={()=>this.reverse()}>{this.state.reverse ? 'Ascending' : 'Descending'}</button>
+            </div>
+            <ol>{moves}</ol>
+        </div>
+        //...
+    );
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+    ```
+5. When someone wins, highlight the three squares that caused the win.
+    ```js
+    function calculateWinner(squares) {
+        const lines = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6],
+        ];
+        for (let i = 0; i < lines.length; i++) {
+            const [a, b, c] = lines[i];
+            if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+                return {symbol: squares[a], line: lines[i]};
+            }
+        }
+        return null;
+    }
+    ```
+    ```js
+    let status;
+    if (winner) {
+        status = 'Winner: ' + winner.symbol;
+    }
+    ```
+    ```js
+    renderSquare(i, highlight) {
+        return (
+            <Square
+                value={this.props.squares[i]}
+                key={i}
+                onClick={() => this.props.onClick(i)} 
+                highlight={highlight}
+            />
+        );
+    }
 
-### Analyzing the Bundle Size
+    render() {
+        //...
+        const winner = calculateWinner(this.props.squares);
+        //...
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+        const board = rows.map((value, rowIndex) => {
+            return (
+                <div className="board-row" key={rowIndex}>
+                    { 
+                        cols.map((value, colIndex) => {
+                            const position = SIZE*rowIndex + colIndex;
+                            const highlight = winner ? winner.line.includes(position) : null;
+                            return this.renderSquare(position, highlight)
+                        })
+                    }
+                </div>
+            );
+        });
 
-### Making a Progressive Web App
+        //...
+    }
+    ```
+    ```js
+    function Square(props) {
+        return (
+            <button
+                className={`square ${props.highlight ? 'active' : ''}`}
+                onClick={props.onClick}>
+                {props.value}
+            </button>
+        );
+    }
+    ```
+    ```css
+    .square.active {
+        background-color: yellow;
+    }
+    ```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+6. When no one wins, display a message about the result being a draw.
+    ```js
+    const isGameOver = !current.squares.includes(null);
 
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+    let status;
+    if (winner) {
+        status = 'Winner: ' + winner.symbol;
+    } else if (isGameOver) {
+        status = 'Draw'
+    } else {
+        status = 'Next player: ' + (this.state.xIsNext ? 'X' : 'O');
+    }
+    ```
